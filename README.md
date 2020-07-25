@@ -1,9 +1,9 @@
 # goproxy
 A secure proxy base on SOCKS5 and QUIC.
 
-Client side listen for connections, forward them to remote server via QUIC. 
+Client side listen for new connections, forward them to remote server via QUIC. 
 Server act as a SOCKS5 server but handles quic connection instead of TCP connetcion. <br>
-Also, 
+Also, server use client certificate for client authentication.
 
 # Requirements
 Both client and server side need certificate & private key.
