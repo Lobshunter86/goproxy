@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"proxy/util"
-	"sync"
 
 	"github.com/lucas-clemente/quic-go"
 )
@@ -28,7 +27,6 @@ type LocalServer struct {
 	remoteAddr string
 	logger     *log.Logger
 	tlsCfg     *tls.Config
-	mutex      *sync.Mutex
 }
 
 func main() {
@@ -60,7 +58,6 @@ func NewLocalServer(tlsCfg *tls.Config, logger *log.Logger, remoteAddr string) (
 		tlsCfg:     tlsCfg,
 		logger:     logger,
 		remoteAddr: remoteAddr,
-		mutex:      &sync.Mutex{},
 	}, nil
 }
 
@@ -91,6 +88,7 @@ func (s *LocalServer) ServeConn(conn net.Conn) error {
 		return err
 	}
 
+	// TODO: handle error properly, golang use syscall.Errno for this
 	stream, err := sess.OpenStreamSync(context.Background())
 	if err != nil {
 		s.logger.Printf("ServeConn openstream error: %v", err)
@@ -112,59 +110,3 @@ func (s *LocalServer) ServeConn(conn net.Conn) error {
 
 	return nil
 }
-
-// func (s *LocalServer) OldServeConn(conn net.Conn) error {
-// 	// TODO: handle error properly, golang use syscall.Errno for this
-// 	stream, err := s.session.OpenStreamSync(s.ctx)
-// 	if err != nil {
-// 		if !err.(net.Error).Temporary() {
-// 			if err := s.RestartSession(); err != nil {
-// 				stream, err = s.session.OpenStreamSync(s.ctx)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			} else {
-// 				return err
-// 			}
-// 		}
-// 	}
-
-// 	done := make(chan struct{}, 1)
-// 	go func() {
-// 		io.Copy(stream, conn)
-// 		done <- struct{}{}
-// 	}()
-
-// 	io.Copy(conn, stream)
-// 	<-done
-
-// 	conn.Close()
-// 	stream.Close()
-
-// 	return nil
-// }
-
-// func (s *LocalServer) RestartSession() error {
-// 	s.mutex.Lock()
-// 	defer s.mutex.Unlock()
-
-// 	var err error
-// 	s.session.CloseWithError(0, "")
-// 	for i := 0; i < START_SESSION_RETRY; i++ {
-// 		if err = s.startSession(); err == nil {
-// 			break
-// 		}
-// 	}
-
-// 	return err
-// }
-
-// func (s *LocalServer) startSession() error {
-// 	session, err := quic.DialAddr(s.remoteAddr, s.tlsCfg, nil)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	s.session = session
-// 	return nil
-// }
