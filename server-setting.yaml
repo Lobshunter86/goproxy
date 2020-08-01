@@ -1,0 +1,8 @@
+addr: "0.0.0.0:443"
+caCert:
+  - "/home/yourname/ca.crt"
+serverCert: "/home/yourname/server.crt"
+serverKey: "/home/yourname/server.key"
+protocols: ## need to match client side setting, also these two are only supported protocols now, set to other value needs to tweak the code
+  - "http"
+  - "socks5"

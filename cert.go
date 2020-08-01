@@ -1,34 +1,44 @@
-package util
+package proxy
 
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 )
 
-func LoadServerCertificate(caCrt string, serverCrt string, serverKey string) (*tls.Config, error) {
+func LoadServerCertificate(caCrts []string, serverCrt string, serverKey string, protos []string) (*tls.Config, error) {
 	Cert, err := tls.LoadX509KeyPair(serverCrt, serverKey)
 	if err != nil {
 		return nil, err
 	}
 
-	caCert, err := ioutil.ReadFile(caCrt)
-	if err != nil {
-		return nil, err
+	caCrtPool := x509.NewCertPool()
+
+	for _, caCrt := range caCrts {
+		caCert, err := ioutil.ReadFile(caCrt)
+		if err != nil {
+			return nil, err
+		}
+
+		caCrtPool.AppendCertsFromPEM(caCert)
 	}
 
-	caCrtPool := x509.NewCertPool()
-	caCrtPool.AppendCertsFromPEM(caCert)
+	for _, p := range protos {
+		if !supportedProtocols[p] {
+			return nil, fmt.Errorf("protocol %s not supported", p)
+		}
+	}
 
 	return &tls.Config{
 		Certificates: []tls.Certificate{Cert},
 		ClientCAs:    caCrtPool,
 		ClientAuth:   tls.RequireAndVerifyClientCert,
-		NextProtos:   []string{"http"},
+		NextProtos:   protos,
 	}, nil
 }
 
-func LoadClientCertificate(caCrt string, clientCrt string, clientKey string) (*tls.Config, error) {
+func LoadClientCertificate(caCrt string, clientCrt string, clientKey string, nextProto string) (*tls.Config, error) {
 	Cert, err := tls.LoadX509KeyPair(clientCrt, clientKey)
 	if err != nil {
 		return nil, err
@@ -46,6 +56,6 @@ func LoadClientCertificate(caCrt string, clientCrt string, clientKey string) (*t
 		Certificates:       []tls.Certificate{Cert},
 		RootCAs:            caCrtPool,
 		InsecureSkipVerify: true,
-		NextProtos:         []string{"http"},
+		NextProtos:         []string{nextProto},
 	}, nil
 }

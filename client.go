@@ -1,56 +1,19 @@
-package main
+package proxy
 
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	"io"
 	"log"
 	"net"
-	"os"
-	"proxy/util"
 
 	"github.com/lucas-clemente/quic-go"
 )
-
-const (
-	START_SESSION_RETRY = 3
-)
-
-var addr = flag.String("addr", "", "client addr to bind")
-var serverAddr = flag.String("saddr", "", "server addr to dial to")
-var caCrt = flag.String("cacert", "", "ca certificate file")
-var clientCrt = flag.String("cert", "", "client sertificate file")
-var clientKey = flag.String("key", "", "client private key file")
 
 type LocalServer struct {
 	remoteAddr string
 	logger     *log.Logger
 	tlsCfg     *tls.Config
-}
-
-func main() {
-	flag.Parse()
-	logger := &log.Logger{}
-	logger.SetOutput(os.Stdout)
-
-	cfg, err := util.LoadClientCertificate(*caCrt, *clientCrt, *clientKey)
-	if err != nil {
-		logger.Printf("load certificate error: %v", err)
-		return
-	}
-
-	server, err := NewLocalServer(cfg, logger, *serverAddr)
-	if err != nil {
-		logger.Printf("init local server error: %v", err)
-		return
-	}
-
-	err = server.ListenAndServe(*addr)
-	if err != nil {
-		logger.Printf("listen and serve error: %v", err)
-		return
-	}
 }
 
 func NewLocalServer(tlsCfg *tls.Config, logger *log.Logger, remoteAddr string) (*LocalServer, error) {
@@ -61,13 +24,20 @@ func NewLocalServer(tlsCfg *tls.Config, logger *log.Logger, remoteAddr string) (
 	}, nil
 }
 
-func (s *LocalServer) ListenAndServe(addr string) error {
+func (s *LocalServer) ListenAndServe(addr string) (err error) {
+	defer func() {
+		if err != nil {
+			s.logger.Printf("[FATAL] Server %s exit on error: %v", addr, err)
+		}
+	}()
+
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
+		println("yes is here:", addr)
 		return err
 	}
 
-	s.logger.Println("proxy server started")
+	s.logger.Println("proxy server started: ", addr)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -107,6 +77,7 @@ func (s *LocalServer) ServeConn(conn net.Conn) error {
 	conn.Close()
 	stream.Close()
 	sess.CloseWithError(0, "")
+	s.logger.Printf("closed connection: %s -> %s", sess.LocalAddr().String(), sess.RemoteAddr().String())
 
 	return nil
 }
