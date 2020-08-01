@@ -9,36 +9,6 @@ import (
 	"github.com/armon/go-socks5"
 )
 
-// func main() {
-// 	flag.Parse()
-// 	logger := &log.Logger{}
-// 	logger.SetOutput(os.Stdout)
-
-// 	cfg, err := proxy.LoadServerCertificate(*caCrt, *serverCrt, *serverKey)
-// 	if err != nil {
-// 		logger.Printf("load certificate error: %v", err)
-// 		return
-// 	}
-
-// 	server, err := proxy.InitServer(cfg, logger)
-// 	if err != nil {
-// 		logger.Printf("init server error: %v", err)
-// 		return
-// 	}
-
-// 	conf := &socks5.Config{}
-// 	handler, err := socks5.New(conf)
-// 	if err != nil {
-// 		logger.Printf("init socks5 server error: %v", err)
-// 		return
-// 	}
-
-// 	err = server.ListenAndServe(*addr, handler)
-// 	if err != nil {
-// 		logger.Printf("listen and serve error: %v", err)
-// 		return
-// 	}
-// }
 const DEFAULT_BUFFER_SIZE = 4096
 
 func main() {
