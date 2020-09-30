@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	configFile := flag.String("config", "", "config file path")
+	configFile := flag.String("config", "./config.yaml", "config file path")
 	flag.Parse()
 
 	cfgs, err := proxy.ParseLocalServerCfg(*configFile)
