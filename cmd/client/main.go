@@ -6,13 +6,21 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"proxy"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/lobshunter86/goproxy/pkg/proxy"
+	"github.com/lobshunter86/goproxy/pkg/version"
 )
 
 func main() {
+	if len(os.Args) > 1 &&
+		(os.Args[1] == "-v" || os.Args[1] == "--version") {
+		version.PrintVersion()
+		return
+	}
+
 	configFile := flag.String("config", "./config.yaml", "config file path")
 	flag.Parse()
 

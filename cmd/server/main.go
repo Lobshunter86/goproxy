@@ -4,14 +4,22 @@ import (
 	"flag"
 	"log"
 	"os"
-	"proxy"
 
 	"github.com/armon/go-socks5"
+
+	"github.com/lobshunter86/goproxy/pkg/proxy"
+	"github.com/lobshunter86/goproxy/pkg/version"
 )
 
 const DEFAULT_BUFFER_SIZE = 4096
 
 func main() {
+	if len(os.Args) > 1 &&
+		(os.Args[1] == "-v" || os.Args[1] == "--version") {
+		version.PrintVersion()
+		return
+	}
+
 	configFile := flag.String("config", "", "config file path")
 	flag.Parse()
 
