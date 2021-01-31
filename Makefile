@@ -3,6 +3,9 @@ BRANCH    := $(shell git rev-parse --abbrev-ref HEAD)
 
 REPO := github.com/lobshunter86/goproxy
 
+GOENV   := GO111MODULE=on CGO_ENABLED=0
+GO 		:= $(GOENV) go
+
 LDFLAGS := -w -s
 LDFLAGS += -X "$(REPO)/pkg/version.GitHash=$(COMMIT)"
 LDFLAGS += -X "$(REPO)/pkg/version.GitBranch=$(BRANCH)"
@@ -10,10 +13,10 @@ LDFLAGS += -X "$(REPO)/pkg/version.GitBranch=$(BRANCH)"
 default: vet server-side client-side
 
 server-side: 
-	go build -ldflags '$(LDFLAGS)' -o bin/server ./cmd/server/
+	$(GO) build -ldflags '$(LDFLAGS)' -o bin/server ./cmd/server/
 
 client-side: 
-	go build -ldflags '$(LDFLAGS)' -o bin/client ./cmd/client/
+	$(GO) build -ldflags '$(LDFLAGS)' -o bin/client ./cmd/client/
 
 vet:
-	go vet ./...
+	$(GO) vet ./...
