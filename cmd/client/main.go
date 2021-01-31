@@ -4,9 +4,11 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net/http"
 	"os"
 	"proxy"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -14,16 +16,18 @@ func main() {
 	configFile := flag.String("config", "./config.yaml", "config file path")
 	flag.Parse()
 
-	cfgs, err := proxy.ParseLocalServerCfg(*configFile)
+	localCfg, err := proxy.ParseLocalServerCfg(*configFile)
 	if err != nil {
 		panic("parse config file error")
 	}
-	if len(cfgs) == 0 {
+
+	if len(localCfg.Servers) == 0 {
 		panic("no configuration read")
 	}
 
 	servers := []*proxy.LocalServer{}
-	for _, cfg := range cfgs {
+
+	for _, cfg := range localCfg.Servers {
 		logger := &log.Logger{}
 		logger.SetOutput(os.Stdout)
 
@@ -33,7 +37,7 @@ func main() {
 			return
 		}
 
-		server, err := proxy.NewLocalServer(tlsCfg, logger, cfg.ServerAddr)
+		server, err := proxy.NewLocalServer(tlsCfg, logger, cfg.Protocol, cfg.ServerAddr)
 		if err != nil {
 			logger.Printf("listen and serve error: %v", err)
 			return
@@ -44,13 +48,20 @@ func main() {
 
 	errGroup, ctx := errgroup.WithContext(context.TODO())
 
+	if len(localCfg.Global.MetricsAddr) != 0 {
+		http.Handle("/metrics", promhttp.Handler())
+		errGroup.Go(func() error {
+			return http.ListenAndServe(localCfg.Global.MetricsAddr, nil)
+		})
+	}
+
 	for idx, server := range servers {
 		// reassign to prevent data race
 		// errgroup.Go calls "go" later on, make data race in this condiction
 		s := server
 		i := idx
 		errGroup.Go(func() error {
-			return s.ListenAndServe(cfgs[i].LocalAddr)
+			return s.ListenAndServe(localCfg.Servers[i].LocalAddr)
 		})
 	}
 

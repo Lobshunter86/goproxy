@@ -1,17 +1,21 @@
-- name: "http proxy" # "name" is just for human to read, useless to code
-  protocol: "http" # use for protocol negotiation with server, by setting TLS.Config.NextProto field
-  localAddr: "127.0.0.1:8123" # local address to listen to
-  serverAddr: "192.168.0.1:443" # remote server address, server side can handles multiple protocols on single port, seperate by "protocol" configuration
+global:
+  metrics_addr: "127.0.0.1:9110"
 
-  # certificates and keys for TLS
-  caCert: "/home/yourname/ca.cert"
-  clientCert: "/home/yourname/client.cert"
-  clientKey: "/home/yourname/client.key"
+servers:
+  - name: "http proxy" # "name" is just for human to read, useless to code
+    protocol: "http" # use for protocol negotiation with server, by setting TLS.Config.NextProto field
+    localAddr: "127.0.0.1:8123" # local address to listen to
+    serverAddr: "192.168.0.1:443" # remote server address, server side can handles multiple protocols on single port, seperate by "protocol" configuration
 
-- name: "socks5 proxy"
-  protocol: "socks5"
-  localAddr: "127.0.0.1:1080"
-  serverAddr: "192.168.0.1:443"
-  caCert: "/home/yourname/ca.cert"
-  clientCert: "/home/yourname/client.cert"
-  clientKey: "/home/yourname/client.key"
+    # certificates and keys for TLS
+    caCert: "/home/yourname/ca.cert"
+    clientCert: "/home/yourname/client.cert"
+    clientKey: "/home/yourname/client.key"
+
+  - name: "socks5 proxy"
+    protocol: "socks5"
+    localAddr: "127.0.0.1:1080"
+    serverAddr: "192.168.0.1:443"
+    caCert: "/home/yourname/ca.cert"
+    clientCert: "/home/yourname/client.cert"
+    clientKey: "/home/yourname/client.key"

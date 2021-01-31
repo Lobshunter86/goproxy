@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 
 	"github.com/lucas-clemente/quic-go"
 )
@@ -14,13 +15,17 @@ type LocalServer struct {
 	remoteAddr string
 	logger     *log.Logger
 	tlsCfg     *tls.Config
+
+	protocol string
 }
 
-func NewLocalServer(tlsCfg *tls.Config, logger *log.Logger, remoteAddr string) (*LocalServer, error) {
+func NewLocalServer(tlsCfg *tls.Config, logger *log.Logger, protocol string, remoteAddr string) (*LocalServer, error) {
 	return &LocalServer{
 		tlsCfg:     tlsCfg,
 		logger:     logger,
 		remoteAddr: remoteAddr,
+
+		protocol: protocol,
 	}, nil
 }
 
@@ -33,7 +38,6 @@ func (s *LocalServer) ListenAndServe(addr string) (err error) {
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		println("yes is here:", addr)
 		return err
 	}
 
@@ -52,8 +56,11 @@ func (s *LocalServer) ListenAndServe(addr string) (err error) {
 }
 
 func (s *LocalServer) ServeConn(conn net.Conn) error {
+	metricVecs.RequestCount.WithLabelValues(s.protocol).Inc()
+	handShakeStart := time.Now()
 	sess, err := quic.DialAddr(s.remoteAddr, s.tlsCfg, nil)
 	if err != nil {
+		metricVecs.HandshakeErrCount.WithLabelValues(s.protocol).Inc()
 		s.logger.Printf("ServeConn dial error: %v", err)
 		return err
 	}
@@ -61,9 +68,13 @@ func (s *LocalServer) ServeConn(conn net.Conn) error {
 	// TODO: handle error properly, golang use syscall.Errno for this
 	stream, err := sess.OpenStreamSync(context.Background())
 	if err != nil {
+		metricVecs.HandshakeErrCount.WithLabelValues(s.protocol).Inc()
 		s.logger.Printf("ServeConn openstream error: %v", err)
 		return err
 	}
+
+	handshakeEnd := time.Now()
+	metricVecs.RequestHandshakeDuration.WithLabelValues(s.protocol).Observe(float64(handshakeEnd.Sub(handShakeStart).Milliseconds()))
 
 	done := make(chan struct{}, 1)
 	go func() {
@@ -73,6 +84,8 @@ func (s *LocalServer) ServeConn(conn net.Conn) error {
 
 	io.Copy(conn, stream)
 	<-done
+	handleEnd := time.Now()
+	metricVecs.RequestHandlingDuration.WithLabelValues(s.protocol).Observe(handleEnd.Sub(handshakeEnd).Seconds())
 
 	conn.Close()
 	stream.Close()

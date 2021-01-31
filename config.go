@@ -6,6 +6,15 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type LocalConfig struct {
+	Global  LocalGlobalConfig `json:"global,omitempty" yaml:"global"`
+	Servers []LocalServerCfg  `json:"servers,omitempty" yaml:"servers"`
+}
+
+type LocalGlobalConfig struct {
+	MetricsAddr string `json:"metrics_addr,omitempty" yaml:"metrics_addr"`
+}
+
 type LocalServerCfg struct {
 	Name       string `yaml:"name"`
 	Protocol   string `yaml:"protocol"`
@@ -16,13 +25,13 @@ type LocalServerCfg struct {
 	ClientKey  string `yaml:"clientKey"`
 }
 
-func ParseLocalServerCfg(file string) ([]*LocalServerCfg, error) {
+func ParseLocalServerCfg(file string) (LocalConfig, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return LocalConfig{}, err
 	}
 
-	result := []*LocalServerCfg{}
+	result := LocalConfig{}
 	err = yaml.Unmarshal(data, &result)
 	return result, err
 }
