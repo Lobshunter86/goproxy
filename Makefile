@@ -1,7 +1,12 @@
-all: server-side client-side
+LDFLAGS := -w -s
+
+default: vet server-side client-side
 
 server-side: 
-	go build -o bin/server ./cmd/server/
+	go build -ldflags '$(LDFLAGS)' -o bin/server ./cmd/server/
 
 client-side: 
-	go build -o bin/client ./cmd/client/
+	go build -ldflags '$(LDFLAGS)' -o bin/client ./cmd/client/
+
+vet:
+	go vet ./...
