@@ -8,6 +8,7 @@ import (
 type LocalServerMetricsVec struct {
 	RequestCount             *prometheus.CounterVec
 	HandshakeErrCount        *prometheus.CounterVec
+	CurrentConnGauge         *prometheus.GaugeVec
 	RequestHandshakeDuration *prometheus.HistogramVec
 	RequestHandlingDuration  *prometheus.HistogramVec // not includes handshake time
 }
@@ -25,6 +26,14 @@ var metricVecs = LocalServerMetricsVec{
 		prometheus.CounterOpts{
 			Name: "hanshake_err_count",
 			Help: "counter of errors in quic handshake, not includes errors after that",
+		},
+		[]string{"protocol"},
+	),
+
+	CurrentConnGauge: promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "current_connections",
+			Help: "current connection count",
 		},
 		[]string{"protocol"},
 	),

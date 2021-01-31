@@ -57,7 +57,10 @@ func (s *LocalServer) ListenAndServe(addr string) (err error) {
 
 func (s *LocalServer) ServeConn(conn net.Conn) error {
 	metricVecs.RequestCount.WithLabelValues(s.protocol).Inc()
+	metricVecs.CurrentConnGauge.WithLabelValues(s.protocol).Inc()
+	defer metricVecs.CurrentConnGauge.WithLabelValues(s.protocol).Dec()
 	handShakeStart := time.Now()
+
 	sess, err := quic.DialAddr(s.remoteAddr, s.tlsCfg, nil)
 	if err != nil {
 		metricVecs.HandshakeErrCount.WithLabelValues(s.protocol).Inc()
