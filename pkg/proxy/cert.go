@@ -31,6 +31,7 @@ func LoadServerCertificate(caCrts []string, serverCrt string, serverKey string, 
 	}
 
 	return &tls.Config{
+		MinVersion:   tls.VersionTLS13,
 		Certificates: []tls.Certificate{Cert},
 		ClientCAs:    caCrtPool,
 		ClientAuth:   tls.RequireAndVerifyClientCert,
@@ -53,9 +54,9 @@ func LoadClientCertificate(caCrt string, clientCrt string, clientKey string, nex
 	caCrtPool.AppendCertsFromPEM(caCert)
 
 	return &tls.Config{
-		Certificates:       []tls.Certificate{Cert},
-		RootCAs:            caCrtPool,
-		InsecureSkipVerify: true,
-		NextProtos:         []string{nextProto},
+		MinVersion:   tls.VersionTLS13,
+		Certificates: []tls.Certificate{Cert},
+		RootCAs:      caCrtPool,
+		NextProtos:   []string{nextProto},
 	}, nil
 }

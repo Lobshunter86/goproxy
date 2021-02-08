@@ -24,22 +24,22 @@ type Handler interface {
 	Serve(net.Listener) error
 }
 
-// ProxyConn satisfies net.Conn interface
-type ProxyConn struct {
+// Conn satisfies net.Conn interface
+type Conn struct {
 	quic.Session
 	quic.Stream
 }
 
-func (c ProxyConn) Close() error {
+func (c Conn) Close() error {
 	return c.Session.CloseWithError(0, "")
 }
 
-// ProxyListener satisfies net.Listener interface
-type ProxyListener struct {
+// Listener satisfies net.Listener interface
+type Listener struct {
 	quic.Listener
 }
 
-func (l *ProxyListener) Accept() (net.Conn, error) {
+func (l *Listener) Accept() (net.Conn, error) {
 	ctx := context.TODO()
 	sess, err := l.Listener.Accept(ctx)
 	if err != nil {
@@ -51,7 +51,7 @@ func (l *ProxyListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	return ProxyConn{sess, stream}, nil
+	return Conn{sess, stream}, nil
 }
 
 type bufferedListener struct {
@@ -82,7 +82,7 @@ func (l *bufferedListener) Addr() net.Addr {
 	return l.addr
 }
 
-type ProxyServer struct {
+type Server struct {
 	tlsCfg   *tls.Config
 	logger   *log.Logger
 	addr     string
@@ -90,8 +90,8 @@ type ProxyServer struct {
 	bufSize  map[string]int
 }
 
-func NewProxyServer(tlsCfg *tls.Config, logger *log.Logger, addr string) (*ProxyServer, error) {
-	return &ProxyServer{
+func NewProxyServer(tlsCfg *tls.Config, logger *log.Logger, addr string) (*Server, error) {
+	return &Server{
 		tlsCfg:   tlsCfg,
 		logger:   logger,
 		addr:     addr,
@@ -101,7 +101,7 @@ func NewProxyServer(tlsCfg *tls.Config, logger *log.Logger, addr string) (*Proxy
 
 // Handle register handler for given protocol and create a buffered listener for it
 // Server will accept connections, then send connection to corresponding buffered listener according to connection's protocol
-func (s *ProxyServer) Handle(protocol string, handler Handler, bufSize int) error {
+func (s *Server) Handle(protocol string, handler Handler, bufSize int) error {
 	for _, proto := range s.tlsCfg.NextProtos {
 		if protocol == proto {
 			s.handlers[protocol] = handler
@@ -113,7 +113,7 @@ func (s *ProxyServer) Handle(protocol string, handler Handler, bufSize int) erro
 	return fmt.Errorf("Protocol not supported or not configured: %s", protocol)
 }
 
-func (s *ProxyServer) ListenAndServe() error {
+func (s *Server) ListenAndServe() error {
 	if len(s.handlers) == 0 {
 		return fmt.Errorf("no handler registered")
 	}
@@ -152,7 +152,7 @@ func (s *ProxyServer) ListenAndServe() error {
 			stream, err := sess.AcceptStream(ctx)
 			if err != nil {
 				s.logger.Printf("[ERROR] accept stream err: %v\n", err)
-				sess.CloseWithError(0, "")
+				sess.CloseWithError(0, "") // nolint:errcheck
 				continue
 			}
 
@@ -164,7 +164,7 @@ func (s *ProxyServer) ListenAndServe() error {
 				// but quic-go mention NegotiatedProtocol is not guaranteed to be from tlsconfig.NextProtos
 			}
 
-			conn := ProxyConn{Session: sess, Stream: stream}
+			conn := Conn{Session: sess, Stream: stream}
 			l.buf <- conn // buffer isn't big enough may block main thread
 		}
 	}()

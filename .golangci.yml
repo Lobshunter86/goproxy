@@ -1,0 +1,22 @@
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+linters:
+  disable-all: false
+  enable:
+    # code complexity
+    - gocyclo
+    - gocognit
+    # security
+    - bodyclose
+    - gosec
+    # performance
+    - maligned
+    - prealloc
+    # misc?
+    - golint
+    - misspell
+    - unparam # unused parameters
+    # tools that better to have, but I am aware of it's rules
+    # - gomnd

@@ -11,7 +11,7 @@ import (
 	"github.com/lobshunter86/goproxy/pkg/version"
 )
 
-const DEFAULT_BUFFER_SIZE = 4096
+const defaultBufferSize = 4096
 
 func main() {
 	if len(os.Args) > 1 &&
@@ -52,13 +52,13 @@ func main() {
 		return
 	}
 
-	if err = server.Handle("socks5", socksHandler, DEFAULT_BUFFER_SIZE); err != nil {
+	if err = server.Handle("socks5", socksHandler, defaultBufferSize); err != nil {
 		logger.Printf("[FATAL] register socks5 handler error: %v\n", err)
 		return
 	}
 
-	httpHandler := proxy.NewHttpHandler()
-	if err = server.Handle("http", httpHandler, DEFAULT_BUFFER_SIZE); err != nil {
+	httpHandler := proxy.NewHTTPHandler()
+	if err = server.Handle("http", httpHandler, defaultBufferSize); err != nil {
 		logger.Printf("[FATAL] register http handler error: %v\n", err)
 		return
 	}

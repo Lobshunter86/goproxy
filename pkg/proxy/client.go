@@ -51,7 +51,7 @@ func (s *LocalServer) ListenAndServe(addr string) (err error) {
 			s.logger.Println("accept connection")
 		}
 
-		go s.ServeConn(conn)
+		go s.ServeConn(conn) // nolint:errcheck
 	}
 }
 
@@ -81,18 +81,18 @@ func (s *LocalServer) ServeConn(conn net.Conn) error {
 
 	done := make(chan struct{}, 1)
 	go func() {
-		io.Copy(stream, conn)
+		io.Copy(stream, conn) // nolint:errcheck
 		done <- struct{}{}
 	}()
 
-	io.Copy(conn, stream)
+	io.Copy(conn, stream) // nolint:errcheck
 	<-done
 	handleEnd := time.Now()
 	metricVecs.RequestHandlingDuration.WithLabelValues(s.protocol).Observe(handleEnd.Sub(handshakeEnd).Seconds())
 
 	conn.Close()
 	stream.Close()
-	sess.CloseWithError(0, "")
+	sess.CloseWithError(0, "") // nolint:errcheck
 	s.logger.Printf("closed connection: %s -> %s", sess.LocalAddr().String(), sess.RemoteAddr().String())
 
 	return nil

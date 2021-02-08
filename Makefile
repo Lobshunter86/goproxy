@@ -10,7 +10,7 @@ LDFLAGS := -w -s
 LDFLAGS += -X "$(REPO)/pkg/version.GitHash=$(COMMIT)"
 LDFLAGS += -X "$(REPO)/pkg/version.GitBranch=$(BRANCH)"
 
-default: vet server-side client-side
+default: lint server-side client-side
 
 server-side: 
 	$(GO) build -ldflags '$(LDFLAGS)' -o bin/server ./cmd/server/
@@ -18,5 +18,5 @@ server-side:
 client-side: 
 	$(GO) build -ldflags '$(LDFLAGS)' -o bin/client ./cmd/client/
 
-vet:
-	$(GO) vet ./...
+lint:
+	golangci-lint run

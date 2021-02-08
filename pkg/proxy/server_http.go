@@ -12,14 +12,14 @@ import (
 // However, wrapping this implement isn't a good idea, because Handler interface doesn't work well with http.Handler
 // it's better to impletement a http handler from scatch
 
-type HttpHandler struct {
+type HTTPHandler struct {
 	*goproxy.ProxyHttpServer
 }
 
-func NewHttpHandler() *HttpHandler {
-	return &HttpHandler{goproxy.NewProxyHttpServer()}
+func NewHTTPHandler() *HTTPHandler {
+	return &HTTPHandler{goproxy.NewProxyHttpServer()}
 }
 
-func (h *HttpHandler) Serve(l net.Listener) error {
+func (h *HTTPHandler) Serve(l net.Listener) error {
 	return http.Serve(l, h.ProxyHttpServer)
 }
