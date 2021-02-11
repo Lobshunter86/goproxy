@@ -38,8 +38,10 @@ func ParseLocalServerCfg(file string) (LocalConfig, error) {
 
 type RemoteServerCfg struct {
 	Addr       string   `yaml:"addr"`
-	CaCert     []string `yaml:"caCert"`
+	CaCert     string   `yaml:"caCert"`
 	ServerCert string   `yaml:"serverCert"`
+	Domains    []string `yaml:"domains"`
+	ACMEPort   int      `yaml:"acmePort"`
 	ServerKey  string   `yaml:"serverKey"`
 	Protocols  []string `yaml:"protocols"`
 }

@@ -11,9 +11,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// "protocols" field in yaml need to match these values
-var supportedProtocols = map[string]bool{"http": true, "socks5": true}
-
 // TODO: implement a http proxy fullfills ServeConn(net.Conn), it's way more effcient and elegant.
 
 // Change Handler interface function from ServeConn(net.Conn) to Serve(net.Listener) to work with http proxy.

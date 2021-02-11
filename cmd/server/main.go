@@ -2,16 +2,22 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/armon/go-socks5"
 
 	"github.com/lobshunter86/goproxy/pkg/proxy"
+	"github.com/lobshunter86/goproxy/pkg/util"
 	"github.com/lobshunter86/goproxy/pkg/version"
 )
 
 const defaultBufferSize = 4096
+
+// "protocols" field in yaml need to match these values
+var supportedProtocols = map[string]bool{"http": true, "socks5": true}
 
 func main() {
 	if len(os.Args) > 1 &&
@@ -27,16 +33,37 @@ func main() {
 	logger.SetOutput(os.Stdout)
 
 	cfg, err := proxy.ParseRemoteServerCfg(*configFile)
-	if err != nil {
-		logger.Printf("[FATAL] parse config file error: %v\n", err)
-		return
+	util.DoneOrDieWithMesg(err, fmt.Sprintf("[FATAL] parse config file error: %v\n", err))
+
+OUTER:
+	for _, proto := range cfg.Protocols {
+		for supported := range supportedProtocols {
+			if proto == supported {
+				continue OUTER
+			}
+		}
+
+		panic(fmt.Sprintf("unsupported protocol: %s", proto))
 	}
 
-	tlsCfg, err := proxy.LoadServerCertificate(cfg.CaCert, cfg.ServerCert, cfg.ServerKey, cfg.Protocols)
-	if err != nil {
-		logger.Printf("[FATAL] Load server Certificate error: %v\n", err)
-		return
+	clientCaCert, err := ioutil.ReadFile(cfg.CaCert)
+	util.DoneOrDieWithMesg(err, fmt.Sprintf("read client ca cert %v", err))
+
+	var certProcider proxy.CertificateProvider
+	if len(cfg.ServerCert) != 0 && len(cfg.ServerKey) != 0 {
+		// local provider first
+		certProcider, err = proxy.NewLocalProvider(cfg.ServerCert, cfg.ServerKey)
+		util.DoneOrDieWithMesg(err, fmt.Sprintf("NewLocalProvider %v", err))
+	} else {
+		acmeprovider := proxy.NewACMEProvider(cfg.Domains)
+		go func() {
+			err := acmeprovider.StartHTTP(cfg.ACMEPort)
+			panic(fmt.Sprintf("ACME HTTP handler returns: %v", err))
+		}()
+		certProcider = acmeprovider
 	}
+
+	tlsCfg := proxy.LoadServerCertificate(clientCaCert, certProcider, cfg.Protocols)
 
 	server, err := proxy.NewProxyServer(tlsCfg, logger, cfg.Addr)
 	if err != nil {

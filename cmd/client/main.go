@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/lobshunter86/goproxy/pkg/proxy"
+	"github.com/lobshunter86/goproxy/pkg/util"
 	"github.com/lobshunter86/goproxy/pkg/version"
 )
 
@@ -24,26 +26,27 @@ func main() {
 	configFile := flag.String("config", "./config.yaml", "config file path")
 	flag.Parse()
 
+	// parse
 	localCfg, err := proxy.ParseLocalServerCfg(*configFile)
-	if err != nil {
-		panic("parse config file error")
-	}
+	util.DoneOrDieWithMesg(err, "parse config file error")
 
 	if len(localCfg.Servers) == 0 {
 		panic("no configuration read")
 	}
 
+	// new local servers
 	servers := []*proxy.LocalServer{}
 
+	logger := &log.Logger{}
+	logger.SetOutput(os.Stdout)
 	for _, cfg := range localCfg.Servers {
-		logger := &log.Logger{}
-		logger.SetOutput(os.Stdout)
+		cert, err := ioutil.ReadFile(cfg.CaCert)
+		util.DoneOrDieWithMesg(err, "read certificate")
 
-		tlsCfg, err := proxy.LoadClientCertificate(cfg.CaCert, cfg.ClientCert, cfg.ClientKey, cfg.Protocol)
-		if err != nil {
-			logger.Printf("init local server error: %v", err)
-			return
-		}
+		certProvider, err := proxy.NewLocalProvider(cfg.ClientCert, cfg.ClientKey)
+		util.DoneOrDieWithMesg(err, "load certificate")
+
+		tlsCfg := proxy.LoadClientCertificate(cert, certProvider, cfg.Protocol)
 
 		server, err := proxy.NewLocalServer(tlsCfg, logger, cfg.Protocol, cfg.ServerAddr)
 		if err != nil {
@@ -56,6 +59,7 @@ func main() {
 
 	errGroup, ctx := errgroup.WithContext(context.TODO())
 
+	// metrics
 	if len(localCfg.Global.MetricsAddr) != 0 {
 		http.Handle("/metrics", promhttp.Handler())
 		errGroup.Go(func() error {
@@ -63,6 +67,7 @@ func main() {
 		})
 	}
 
+	// starts serers
 	for idx, server := range servers {
 		// reassign to prevent data race
 		// errgroup.Go calls "go" later on, make data race in this condiction
