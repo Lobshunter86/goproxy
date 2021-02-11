@@ -40,6 +40,7 @@ func (s *LocalServer) ListenAndServe(addr string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer listener.Close()
 
 	s.logger.Println("proxy server started: ", addr)
 	for {

@@ -119,6 +119,7 @@ func (s *Server) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
+	defer listener.Close()
 
 	errGroup, ctx := errgroup.WithContext(context.TODO())
 	bufListeners := make(map[string]*bufferedListener)
