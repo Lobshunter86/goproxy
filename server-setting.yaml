@@ -4,7 +4,6 @@ serverCert: "/home/yourname/server.crt"
 serverKey: "/home/yourname/server.key"
 domains: # domains to serve with auto TLS, doesn't support wildcard
   - "example.com"
-acmePort: 9527
 protocols: ## need to match client side setting, also these two are only supported protocols now, set to other value needs to tweak the code
   - "http"
   - "socks5"

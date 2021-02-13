@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -44,6 +45,8 @@ type ACMEProvider struct {
 	mgr autocert.Manager
 }
 
+// !!! ACMEProvider is untested
+// not sure if it works
 func NewACMEProvider(domains []string) *ACMEProvider {
 	provider := new(ACMEProvider)
 	provider.mgr = autocert.Manager{
@@ -56,11 +59,15 @@ func NewACMEProvider(domains []string) *ACMEProvider {
 }
 
 // StartHTTP starts the ACME HTTP handler
-func (p *ACMEProvider) StartHTTP(port int) error {
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), p.mgr.HTTPHandler(nil))
+func (p *ACMEProvider) StartHTTP() error {
+	return http.ListenAndServe(":80", p.mgr.HTTPHandler(nil))
 }
 
 func (p *ACMEProvider) GetCert(helo *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	fmt.Println("got GetCert request")
+	defer fmt.Println("done GetCert request")
+	helo.SupportedProtos = append([]string{acme.ALPNProto}, helo.SupportedProtos...)
+	defer func() { helo.SupportedProtos = helo.SupportedProtos[1:] }()
 	return p.mgr.GetCertificate(helo)
 }
 

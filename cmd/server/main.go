@@ -52,21 +52,10 @@ OUTER:
 	clientCaCert, err := ioutil.ReadFile(cfg.CaCert)
 	util.DoneOrDieWithMesg(err, fmt.Sprintf("read client ca cert %v", err))
 
-	var certProcider proxy.ServerCertificateProvider
-	if len(cfg.ServerCert) != 0 && len(cfg.ServerKey) != 0 {
-		// local provider first
-		certProcider, err = proxy.NewLocalProvider(cfg.ServerCert, cfg.ServerKey)
-		util.DoneOrDieWithMesg(err, fmt.Sprintf("NewLocalProvider %v", err))
-	} else {
-		acmeprovider := proxy.NewACMEProvider(cfg.Domains)
-		go func() {
-			err := acmeprovider.StartHTTP(cfg.ACMEPort)
-			panic(fmt.Sprintf("ACME HTTP handler returns: %v", err))
-		}()
-		certProcider = acmeprovider
-	}
+	certProvider, err := proxy.NewLocalProvider(cfg.ServerCert, cfg.ServerKey)
+	util.DoneOrDieWithMesg(err, fmt.Sprintf("NewLocalProvider %v", err))
 
-	tlsCfg := proxy.NewServerTLSConfig(clientCaCert, certProcider, cfg.Protocols)
+	tlsCfg := proxy.NewServerTLSConfig(clientCaCert, certProvider, cfg.Protocols)
 
 	server, err := proxy.NewProxyServer(tlsCfg, logger, cfg.Addr)
 	if err != nil {

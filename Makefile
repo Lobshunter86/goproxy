@@ -23,3 +23,6 @@ lint:
 
 test:
 	$(GO) test ./... -coverpkg ./pkg/proxy  -covermode atomic -coverprofile bin/cover.out
+
+clean:
+	rm bin/*

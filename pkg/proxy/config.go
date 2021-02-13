@@ -35,7 +35,6 @@ type RemoteServerCfg struct {
 	CaCert     string   `yaml:"caCert"`
 	ServerCert string   `yaml:"serverCert"`
 	Domains    []string `yaml:"domains"`
-	ACMEPort   int      `yaml:"acmePort"`
 	ServerKey  string   `yaml:"serverKey"`
 	Protocols  []string `yaml:"protocols"`
 }
