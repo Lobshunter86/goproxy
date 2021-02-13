@@ -31,26 +31,6 @@ func (c Conn) Close() error {
 	return c.Session.CloseWithError(0, "")
 }
 
-// Listener satisfies net.Listener interface
-type Listener struct {
-	quic.Listener
-}
-
-func (l *Listener) Accept() (net.Conn, error) {
-	ctx := context.TODO()
-	sess, err := l.Listener.Accept(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	stream, err := sess.AcceptStream(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return Conn{sess, stream}, nil
-}
-
 type bufferedListener struct {
 	addr net.Addr
 	buf  chan net.Conn

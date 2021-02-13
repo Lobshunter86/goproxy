@@ -20,3 +20,6 @@ client-side:
 
 lint:
 	golangci-lint run
+
+test:
+	$(GO) test ./... -coverpkg ./pkg/proxy  -covermode atomic -coverprofile bin/cover.out

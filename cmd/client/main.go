@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,8 +28,11 @@ func main() {
 	flag.Parse()
 
 	// parse
-	localCfg, err := proxy.ParseLocalServerCfg(*configFile)
-	util.DoneOrDieWithMesg(err, "parse config file error")
+	cfgData, err := ioutil.ReadFile(*configFile)
+	util.DoneOrDieWithMesg(err, fmt.Sprintf("read config file %v", err))
+
+	localCfg, err := proxy.ParseLocalServerCfg(cfgData)
+	util.DoneOrDieWithMesg(err, fmt.Sprintf("parse config file %v", err))
 
 	if len(localCfg.Servers) == 0 {
 		panic("no configuration read")
@@ -46,7 +50,7 @@ func main() {
 		certProvider, err := proxy.NewLocalProvider(cfg.ClientCert, cfg.ClientKey)
 		util.DoneOrDieWithMesg(err, "load certificate")
 
-		tlsCfg := proxy.LoadClientCertificate(cert, certProvider, cfg.Protocol)
+		tlsCfg := proxy.NewClientTLSConfig(cert, certProvider, cfg.Protocol)
 
 		server, err := proxy.NewLocalServer(tlsCfg, logger, cfg.Protocol, cfg.ServerAddr)
 		if err != nil {

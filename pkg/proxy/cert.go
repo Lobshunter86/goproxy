@@ -9,8 +9,12 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-type CertificateProvider interface {
+type ServerCertificateProvider interface {
 	GetCert(*tls.ClientHelloInfo) (*tls.Certificate, error)
+}
+
+type ClientCertificateProvider interface {
+	GetClientCert(*tls.CertificateRequestInfo) (*tls.Certificate, error)
 }
 
 type StaticProvider struct {
@@ -26,6 +30,10 @@ func NewLocalProvider(certFile string, keyFile string) (*StaticProvider, error) 
 	provider := new(StaticProvider)
 	provider.cert = Cert
 	return provider, nil
+}
+
+func (p *StaticProvider) GetClientCert(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+	return &p.cert, nil
 }
 
 func (p *StaticProvider) GetCert(helo *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -57,9 +65,8 @@ func (p *ACMEProvider) GetCert(helo *tls.ClientHelloInfo) (*tls.Certificate, err
 }
 
 // client authentication is process by TLS client certificate verification
-func LoadServerCertificate(clientCaCrt []byte, provider CertificateProvider, protos []string) *tls.Config {
+func NewServerTLSConfig(clientCaCrt []byte, provider ServerCertificateProvider, protos []string) *tls.Config {
 	caCrtPool := x509.NewCertPool()
-
 	caCrtPool.AppendCertsFromPEM(clientCaCrt)
 
 	return &tls.Config{
@@ -71,14 +78,14 @@ func LoadServerCertificate(clientCaCrt []byte, provider CertificateProvider, pro
 	}
 }
 
-func LoadClientCertificate(clientCaCrt []byte, provider CertificateProvider, nextProto string) *tls.Config {
+func NewClientTLSConfig(clientCaCrt []byte, provider ClientCertificateProvider, nextProto string) *tls.Config {
 	caCrtPool := x509.NewCertPool()
 	caCrtPool.AppendCertsFromPEM(clientCaCrt)
 
 	return &tls.Config{
-		MinVersion:     tls.VersionTLS13,
-		GetCertificate: provider.GetCert,
-		RootCAs:        caCrtPool,
-		NextProtos:     []string{nextProto},
+		MinVersion:           tls.VersionTLS13,
+		GetClientCertificate: provider.GetClientCert,
+		RootCAs:              caCrtPool,
+		NextProtos:           []string{nextProto},
 	}
 }

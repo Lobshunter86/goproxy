@@ -1,11 +1,10 @@
 package proxy
 
 import (
-	"io/ioutil"
-
 	"gopkg.in/yaml.v2"
 )
 
+// FIXME: group configurations, currently certificate config and goproxy specific config are mixed like a mess
 type LocalConfig struct {
 	Global  LocalGlobalConfig `json:"global,omitempty" yaml:"global"`
 	Servers []LocalServerCfg  `json:"servers,omitempty" yaml:"servers"`
@@ -25,14 +24,9 @@ type LocalServerCfg struct {
 	ClientKey  string `yaml:"clientKey"`
 }
 
-func ParseLocalServerCfg(file string) (LocalConfig, error) {
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		return LocalConfig{}, err
-	}
-
+func ParseLocalServerCfg(data []byte) (LocalConfig, error) {
 	result := LocalConfig{}
-	err = yaml.Unmarshal(data, &result)
+	err := yaml.Unmarshal(data, &result)
 	return result, err
 }
 
@@ -46,13 +40,8 @@ type RemoteServerCfg struct {
 	Protocols  []string `yaml:"protocols"`
 }
 
-func ParseRemoteServerCfg(file string) (*RemoteServerCfg, error) {
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
+func ParseRemoteServerCfg(data []byte) (*RemoteServerCfg, error) {
 	result := &RemoteServerCfg{}
-	err = yaml.Unmarshal(data, result)
+	err := yaml.Unmarshal(data, result)
 	return result, err
 }

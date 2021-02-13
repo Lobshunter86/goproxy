@@ -32,7 +32,10 @@ func main() {
 	logger := &log.Logger{}
 	logger.SetOutput(os.Stdout)
 
-	cfg, err := proxy.ParseRemoteServerCfg(*configFile)
+	cfgData, err := ioutil.ReadFile(*configFile)
+	util.DoneOrDieWithMesg(err, fmt.Sprintf("[FATAL] read config file error: %v\n", err))
+
+	cfg, err := proxy.ParseRemoteServerCfg(cfgData)
 	util.DoneOrDieWithMesg(err, fmt.Sprintf("[FATAL] parse config file error: %v\n", err))
 
 OUTER:
@@ -49,7 +52,7 @@ OUTER:
 	clientCaCert, err := ioutil.ReadFile(cfg.CaCert)
 	util.DoneOrDieWithMesg(err, fmt.Sprintf("read client ca cert %v", err))
 
-	var certProcider proxy.CertificateProvider
+	var certProcider proxy.ServerCertificateProvider
 	if len(cfg.ServerCert) != 0 && len(cfg.ServerKey) != 0 {
 		// local provider first
 		certProcider, err = proxy.NewLocalProvider(cfg.ServerCert, cfg.ServerKey)
@@ -63,7 +66,7 @@ OUTER:
 		certProcider = acmeprovider
 	}
 
-	tlsCfg := proxy.LoadServerCertificate(clientCaCert, certProcider, cfg.Protocols)
+	tlsCfg := proxy.NewServerTLSConfig(clientCaCert, certProcider, cfg.Protocols)
 
 	server, err := proxy.NewProxyServer(tlsCfg, logger, cfg.Addr)
 	if err != nil {
